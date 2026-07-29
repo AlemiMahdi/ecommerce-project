@@ -1,9 +1,10 @@
 package com.ecommerce.order.service;
 
+import java.util.ArrayList;
 import java.util.List;
-
 import org.springframework.stereotype.Service;
 
+import com.ecommerce.order.client.InventoryClient;
 import com.ecommerce.order.client.ProductClient;
 import com.ecommerce.order.dto.OrderRequest;
 import com.ecommerce.order.dto.OrderResponse;
@@ -15,19 +16,23 @@ import com.ecommerce.order.exception.InvalidOrderStatusException;
 import com.ecommerce.order.exception.OrderNotFoundException;
 import com.ecommerce.order.mapper.OrderMapper;
 import com.ecommerce.order.repository.OrderRepository;
+import lombok.extern.slf4j.Slf4j;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderServiceImpl implements OrderService{
 
     private final OrderRepository orderRepository;
     private final ProductClient productClient;
+    private final InventoryClient inventoryClient;  
 
     //Skapar en nu order
     @Override
     public OrderResponse createOrder(Long userId,OrderRequest request) {
+        //först hämtar vi korrekt namn och pris från produkt-service, ingen lagerreservations gjorts ännu
         List<OrderItem> items = request.getItems()
                 .stream()
                 .map(itemRequest -> {
@@ -36,10 +41,28 @@ public class OrderServiceImpl implements OrderService{
                     return OrderMapper.toOrderItem(itemRequest, product);
                 })
                 .toList();
-                
-        CustomerOrder order = OrderMapper.toEntity(userId, items);
-        CustomerOrder savedOrder = orderRepository.save(order);
-        return OrderMapper.toResponse(savedOrder);
+        //Här sparar vi vilka orderrader som faktiskt har reserverats
+        //Om en senare reservation misslyckas kan dessa släppas tillbaka
+        List<OrderItem> reservedItems = new ArrayList<>();
+        CustomerOrder saveOrder;
+        try {
+            for(OrderItem item : items){
+                inventoryClient.reseveInventory(
+                    item.getProductId(), 
+                    item.getQuantity());
+            reservedItems.add(item);
+            }
+            
+            CustomerOrder order = OrderMapper.toEntity(userId, items);
+            saveOrder = orderRepository.save(order);
+            
+        } catch (RuntimeException exception) {
+            //När något musslyckades efter att en eller felra produkter redan har reserverats
+            releaseInventoryQuietly(reservedItems);
+            throw exception;
+        }
+        return OrderMapper.toResponse(saveOrder);
+        
     }
 
     //Hämtar alla orders
@@ -78,10 +101,71 @@ public class OrderServiceImpl implements OrderService{
             );
         }
 
-        order.setStatus(OrderStatus.CANCELLED);
-        CustomerOrder updatedOrder = orderRepository.save(order);
-        return OrderMapper.toResponse(updatedOrder);
+        //Vi hålelr reda på vilka orderrader som faktiskt har släppts
+        //Om ett senare steg misslyckas försöker vi reservera dem igen
+        List<OrderItem> releasedItems = new ArrayList<>();
+        CustomerOrder updatedOrder;
 
+        try {
+            for(OrderItem item : order.getItems()) {
+                inventoryClient.releaseInventory(
+                    item.getProductId(), 
+                item.getQuantity());
+                releasedItems.add(item);
+            }
+            order.setStatus(OrderStatus.CANCELLED);
+            updatedOrder = orderRepository.save(order);
+        } catch (RuntimeException exception) {
+            //Försöker återställa tidigare lagerreserveationer
+            reserveInventoryQuietly(releasedItems);
+            throw exception;
+        }
+        return OrderMapper.toResponse(updatedOrder);
     }
+    /**
+     * Släpper tidigare reserverat lager.
+     *
+     * Metoden används som kompensation när orderskapandet misslyckas.
+     * Ett kompensationsfel loggas utan att det ursprungliga felet ersätts.
+     */
+    private void releaseInventoryQuietly(List<OrderItem> reservedItems){
+        for(OrderItem item : reservedItems){
+            try {
+                inventoryClient.releaseInventory(
+                    item.getProductId(), 
+                    item.getQuantity());
+            } catch (RuntimeException compensationException) {
+                log.error(
+                    "Failed to release inventory for product id {} during compensation",
+                    item.getProductId(),
+                    compensationException
+                );
+            }
+        }
+    }
+
+    /**
+     * Försöker reservera lager igen.
+     *
+     * Metoden används som kompensation om cancel-operationen misslyckas
+     * efter att lager redan har släppts.
+     */
+    private void reserveInventoryQuietly(List<OrderItem> releasedItems) {
+        for(OrderItem item : releasedItems){
+            try {
+                inventoryClient.reseveInventory(
+                    item.getProductId(), 
+                    item.getQuantity());
+            } catch (RuntimeException compensationException) {
+                log.error(
+                    "Failed to restore inventory reservation for product id {}",
+                    item.getProductId(),
+                    compensationException
+                );
+            }
+        }
+    }
+
+
 
 }

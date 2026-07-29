@@ -2,6 +2,7 @@ package com.ecommerce.inventory.service;
 
 import org.springframework.stereotype.Service;
 
+import com.ecommerce.inventory.dto.ConfirmInventoryRequest;
 import com.ecommerce.inventory.dto.InventoryRequest;
 import com.ecommerce.inventory.dto.InventoryResponse;
 import com.ecommerce.inventory.dto.ReleaseInventoryRequest;
@@ -110,6 +111,31 @@ public class InventoryServiceImpl implements InventoryService{
         return InventoryMapper.toResponse(updatedInventory);
     }
     
-    
+    /**
+     * Bekräftar reserverat lager som slutgiltigt sålt.
+     *
+     * quantityAvailable ändras inte eftersom den redan minskades
+     * när lagret reserverades.
+     */
+    @Override
+    public InventoryResponse confirmInventory(ConfirmInventoryRequest request){
+
+        Inventory inventory = inventoryRepository.findByProductId(request.getProductId())
+                .orElseThrow(() -> 
+                    new InventoryNotFoundException(request.getProductId()));
+        
+        if (inventory.getQuantityReserved() < request.getQuantity()) {
+            throw new InsufficientInventoryException(
+                "Cannot confirm more inventory than reserved for the product id: "
+                    + request.getProductId()
+            );
+        }
+        inventory.setQuantityReserved(
+            inventory.getQuantityReserved() - request.getQuantity()
+        );
+
+        Inventory updatedInventory = inventoryRepository.save(inventory);
+        return InventoryMapper.toResponse(updatedInventory);
+    }
 
 }

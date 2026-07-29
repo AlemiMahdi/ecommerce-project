@@ -3,6 +3,7 @@ package com.ecommerce.order.exception;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -69,6 +70,32 @@ public class GlobalExceptionHandler {
                         "timestamp", LocalDateTime.now(),
                         "staus", 503,
                         "error", "SERVICE_UNAVAILABLE",
+                        "message", exception.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(InventoryOperationException.class)
+    public ResponseEntity<?> handleInventoryOperationException(
+        InventoryOperationException exception
+    ){
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 409,
+                        "error", "CONFLICT",
+                        "message", exception.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(InventoryServiceException.class)
+    public ResponseEntity<?> handleInventoryServiceException(
+        InventoryServiceException exception
+    ){
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 503,
+                        "erro", "SERVICE_UNAVAILABLE",
                         "message", exception.getMessage()
                 ));
     }

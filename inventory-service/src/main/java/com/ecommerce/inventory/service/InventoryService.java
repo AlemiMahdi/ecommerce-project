@@ -1,5 +1,6 @@
 package com.ecommerce.inventory.service;
 
+import com.ecommerce.inventory.dto.ConfirmInventoryRequest;
 import com.ecommerce.inventory.dto.InventoryRequest;
 import com.ecommerce.inventory.dto.InventoryResponse;
 import com.ecommerce.inventory.dto.ReleaseInventoryRequest;
@@ -20,5 +21,7 @@ public interface InventoryService {
     //Släppger tillbaka reserverat lager, exempelvis om en order avbryts
     InventoryResponse releaseInventory(ReleaseInventoryRequest request);
     
+    //Bekräftar reserverat lager som sålt
+    InventoryResponse confirmInventory(ConfirmInventoryRequest request);
 
 }
