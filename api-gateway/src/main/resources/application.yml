@@ -31,7 +31,11 @@ spring:
               uri: http://localhost:8084
               predicates:
                 - Path=/api/v1/inventory/**
-
+                
+            - id: payment-service
+              uri: http://localhost:8085
+              predicates:
+                - Path=/api/v1/payments/**
 
 server:
   port: 8080
