@@ -76,6 +76,17 @@ public class PaymentServiceImpl implements PaymentService{
 
         //Sedan smiulerar vi betalningsleverantörens resultat;
         PaymentStatus finalStatus = determineSimulatedStatus();
+
+        /*
+        * Informerar order-service.
+        *
+        * Order-service ansvarar själv för att:
+        * - bekräfta eller släppa lager
+        * - ändra orderstatus
+        */
+        orderClient.sendPaymentResult(orderId, userId, finalStatus);
+
+        //Betalningen markeras först med slutstaus när order-service har hanterat resultat
         savedPayment.setStatus(finalStatus);
         Payment processedPayment = paymentRepository.save(savedPayment);
         return PaymentMapper.toResponse(processedPayment);
