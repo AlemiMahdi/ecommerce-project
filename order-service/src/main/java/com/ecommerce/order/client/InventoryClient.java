@@ -6,6 +6,8 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.beans.factory.annotation.Value;
+
+import com.ecommerce.order.dto.ConfirmInventoryRequest;
 import com.ecommerce.order.dto.InventoryResponse;
 import com.ecommerce.order.dto.ReleaseInventoryRequest;
 import com.ecommerce.order.dto.ReserveInventoryRequest;
@@ -104,6 +106,49 @@ public class InventoryClient {
         } catch(ResourceAccessException exception){
             throw new InventoryServiceException(
                 "Inventory-service is not avaialble "
+            );
+        }
+    }
+
+    //Bekräftar reserverat lager som sålt
+    public InventoryResponse confirmInventory(
+        Long productId,
+        Integer quantity
+    ) {
+        try {
+            InventoryResponse response = inventoryRestClient
+                    .post()
+                    .uri("/api/v1/inventory/confirm")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ConfirmInventoryRequest(productId, quantity))
+                    .retrieve()
+                    .body(InventoryResponse.class);
+
+            if (response == null) {
+                throw new InventoryServiceException(
+                        "Inventory-service returned an empty response"
+                );
+            }
+
+            return response;
+
+        } catch (RestClientResponseException exception) {
+            int status = exception.getStatusCode().value();
+
+            if (status == 400 || status == 404 || status == 409) {
+                throw new InventoryOperationException(
+                        "Could not confirm quantity " + quantity
+                                + " for product id: " + productId
+                );
+            }
+
+            throw new InventoryServiceException(
+                    "Inventory-service returned status: " + status
+            );
+
+        } catch (ResourceAccessException exception) {
+            throw new InventoryServiceException(
+                    "Inventory-service is not available"
             );
         }
     }

@@ -3,7 +3,8 @@ package com.ecommerce.order.service;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
-
+import com.ecommerce.order.dto.PaymentResultRequest;
+import com.ecommerce.order.dto.PaymentResultStatus;
 import com.ecommerce.order.client.InventoryClient;
 import com.ecommerce.order.client.ProductClient;
 import com.ecommerce.order.dto.OrderRequest;
@@ -28,6 +29,7 @@ public class OrderServiceImpl implements OrderService{
     private final OrderRepository orderRepository;
     private final ProductClient productClient;
     private final InventoryClient inventoryClient;  
+    private PaymentResultStatus paymentStatus;
 
     //Skapar en nu order
     @Override
@@ -165,7 +167,73 @@ public class OrderServiceImpl implements OrderService{
             }
         }
     }
+    /**
+     * Hanterar betalningsresultatet.
+     *
+     * COMPLETED:
+     * - bekräftar reserverat lager
+     * - ändrar orderstatus till CONFIRMED
+     *
+     * FAILED:
+     * - släpper reserverat lager
+     * - ändrar orderstatus till PAYMENT_FAILED
+     */
+    @Override
+    public OrderResponse handlePaymentResult(
+        Long orderId,
+        Long userId,
+        PaymentResultRequest request
+    ){
+        CustomerOrder order = orderRepository
+            .findByIdAndUserId(orderId, userId)
+            .orElseThrow(() -> new OrderNotFoundException(orderId));
+        
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new InvalidOrderStatusException(
+                "Only orders with status PENDING can receive a payment result"
+            );
+        }
 
+        if (request.getPaymentStatus() == PaymentResultStatus.COMPLETED) {
+            confirmOrderInventory(order);
+            order.setStatus(OrderStatus.CONFIRMED);
+            
+        }else if(request.getPaymentStatus() == PaymentResultStatus.FAILED){
+            releaseOrderInventory(order);
+            order.setStatus(OrderStatus.PAYMENT_FAILED);
+        }
 
+        CustomerOrder updatedOrder = orderRepository.save(order);
+        return OrderMapper.toResponse(updatedOrder);
 
+    }
+
+    //Bekräftar alla reserverade produkter or ordern
+    private void confirmOrderInventory(CustomerOrder order){
+        
+        for(OrderItem item: order.getItems()){
+            inventoryClient.confirmInventory(item.getProductId(), item.getQuantity());
+        }
+    }
+
+    /**
+     * Släpper orderns reservationer vid misslyckad betalning.
+     *
+     * Om en senare release misslyckas försöker vi återställa
+     * tidigare släppta reservationer.
+     */
+    private void releaseOrderInventory(CustomerOrder order){
+
+        List<OrderItem> releasedItems = new ArrayList<>();
+        try {
+            for(OrderItem item : order.getItems()){
+                inventoryClient.releaseInventory(item.getProductId(), item.getQuantity());
+                releasedItems.add(item);
+            }
+        } catch (RuntimeException exception) {
+            reserveInventoryQuietly(releasedItems);
+            throw exception;
+        }
+    
+    }
 }
