@@ -18,6 +18,7 @@ import com.ecommerce.order.exception.InventoryServiceException;
 @Component
 public class InventoryClient {
     private final RestClient inventoryRestClient;
+    private final String internalServiceKey;
 
     /**
      * Skapar en RestClient med inventory-service som base URL.
@@ -26,11 +27,16 @@ public class InventoryClient {
      * RestClient-bean som redan används för product-service.
      */
     public InventoryClient(
-            @Value("${inventory-service.base-url}") String inventoryServiceBaseUrl
+            @Value("${inventory-service.base-url}") 
+            String inventoryServiceBaseUrl,
+
+            @Value("${internal.service-key}")
+            String internalServiceKey
     ) {
         this.inventoryRestClient = RestClient.builder()
                 .baseUrl(inventoryServiceBaseUrl)
                 .build();
+        this.internalServiceKey = internalServiceKey;
     }
 
     //Reserverar lager för en produkt
@@ -42,6 +48,7 @@ public class InventoryClient {
             InventoryResponse response = inventoryRestClient
                     .post()
                     .uri("/api/v1/inventory/reserve")
+                    .header("X-Internal-Service-Key", internalServiceKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new ReserveInventoryRequest(productId, quantity))
                     .retrieve()
@@ -81,6 +88,7 @@ public class InventoryClient {
             InventoryResponse response = inventoryRestClient
                 .post()
                 .uri("/api/v1/inventory/release")
+                .header("X-Internal-Service-Key", internalServiceKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ReleaseInventoryRequest(productId, quantity))
                 .retrieve()
@@ -119,6 +127,7 @@ public class InventoryClient {
             InventoryResponse response = inventoryRestClient
                     .post()
                     .uri("/api/v1/inventory/confirm")
+                    .header("X-Internal-Service-Key", internalServiceKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new ConfirmInventoryRequest(productId, quantity))
                     .retrieve()

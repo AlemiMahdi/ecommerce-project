@@ -1,6 +1,7 @@
 package com.ecommerce.order.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,6 +37,17 @@ public class InternalOrderController {
         @Valid @RequestBody PaymentResultRequest request
     ){
         OrderResponse response = orderService.handlePaymentResult(orderId, userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+
+    //Intern endpoint för att hämta en order, Avnänds exempelvis av payment-service
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderResponse> getOrderById(
+        @PathVariable Long orderId,
+        @RequestHeader("X-User-Id") Long userId
+    ){
+        OrderResponse response = orderService.getOrderById(orderId, userId);
         return ResponseEntity.ok(response);
     }
 
