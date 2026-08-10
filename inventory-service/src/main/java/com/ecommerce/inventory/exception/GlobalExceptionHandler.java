@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of(
                         "timestamp", LocalDateTime.now(),
-                        "staus", 400,
+                        "status", 400,
                         "error", "BAD_REQUEST",
                         "message", exception.getMessage(),
                         "path", request.getRequestURI()
@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(Map.of(
                 "timestamp", LocalDateTime.now(),
-                "staus", 400,
+                "status", 400,
                 "error", "BAD_REQUEST",
                 "message", message,
                 "path", request.getRequestURI()
@@ -90,15 +90,22 @@ public class GlobalExceptionHandler {
     //Hanterar oväntade fel
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGenericException(
-        Exception exception,
-        HttpServletRequest request
-    ){
+            Exception exception,
+            HttpServletRequest request
+    ) {
+
+        exception.printStackTrace();
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of(
-                    "timestamp", LocalDateTime.now(),
-                    "status", 500,
-                    "error", "INTERNAL_SERVER_ERROR",
-                    "path", request.getRequestURI()
+                        "timestamp", LocalDateTime.now(),
+                        "status", 500,
+                        "error", "INTERNAL_SERVER_ERROR",
+                        "message",
+                        exception.getMessage() != null
+                                ? exception.getMessage()
+                                : exception.getClass().getSimpleName(),
+                        "path", request.getRequestURI()
                 ));
     }
 
