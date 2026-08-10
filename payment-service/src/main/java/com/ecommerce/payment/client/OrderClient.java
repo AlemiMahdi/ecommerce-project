@@ -9,21 +9,27 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import com.ecommerce.payment.dto.OrderPaymentResultRequest;
-import com.ecommerce.payment.entity.Payment;
 import com.ecommerce.payment.entity.PaymentStatus;
 import org.springframework.http.MediaType;
 
 //Http-client som används av payment-service för att hämta order-information
 @Component
 public class OrderClient {
+
     private final RestClient orderResClient;
+    private final String internalServiceKey;
 
     public OrderClient(
-        @Value("${order-service.base-url}") String orderServiceBaseUrl
+        @Value("${order-service.base-url}") 
+        String orderServiceBaseUrl,
+
+        @Value("${internal.service-key}")
+        String internalServiceKey
     ){
         this.orderResClient = RestClient.builder()
                 .baseUrl(orderServiceBaseUrl)
                 .build();
+        this.internalServiceKey = internalServiceKey;
     }
 
     /**
@@ -39,7 +45,8 @@ public class OrderClient {
         try {
             OrderDetailsResponse response = orderResClient
                 .get()
-                .uri("/api/v1/orders/{orderId}", orderId)
+                .uri("/internal/orders/{orderId}", orderId)
+                .header("X-Internal-Service-Key", internalServiceKey)
                 .header("X-User-Id", userId.toString())
                 .retrieve()
                 .body(OrderDetailsResponse.class);
@@ -82,6 +89,7 @@ public class OrderClient {
         try {
             orderResClient.patch()
                     .uri("/internal/orders/{orderId}/payment-result", orderId)
+                    .header("X-Internal-Service-Key", internalServiceKey)
                     .header("X-User-Id", userId.toString())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new OrderPaymentResultRequest(paymentStatus))
