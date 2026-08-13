@@ -50,12 +50,23 @@ function ProductDetailsPage() {
     }
 
     return (
-        <main>
-            <h1>{product.name}</h1>
-            <p>{product.description}</p>
-            <h2>{product.price}</h2>
-            <p>Kategori: {product.category}</p>
-        </main>
+      <main className="page-container">
+        <div className="product-details">
+            <div className="product-details-image-wrapper">
+                {product.imageUrl} ? (
+                    <img src={product.imageUrl} alt={product.name} className="product-details-image" />
+                ) : ( <div className="product-image-placeholder"> Ingen bild</div> )
+            </div>
+            <div className="product-details-content">
+                <span className="product-category"> {product.category} </span>
+                <h1>{product.name}</h1>
+                <p className="product-details-description"> {product.description} </p>
+                <p className="product-details-price">{product.price.toLocaleString("sv-SE")}kr</p>
+                <button type="button" className="button button-primary"> Lägg i kundvagnen</button>
+            </div>
+
+        </div>
+      </main>
     )
 }
 

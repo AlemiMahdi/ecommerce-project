@@ -44,16 +44,17 @@ function ProductsPages(){
         );
     }
     return(
-        <main>
-            <h1>Produkter</h1>
+        <main className="page-container">
+            <section className="page-header">
+                <p className="page-eyebrow"> BUTIK</p>
+                <h1>Våra produkter</h1>
+                <p>Utforska vårt aktuella sortiment</p>
+            </section>
             <div className="product-grid">
-            {products.map((product) => (
-                <ProductCard
-                key={product.id}
-                product={product}
-                />
-            ))}
-            </div>            
+                {products.map((product) => (
+                    <ProductCard key={product.id} product={product}/>
+                ))}
+            </div>
         </main>
     );
 }
