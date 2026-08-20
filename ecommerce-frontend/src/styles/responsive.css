@@ -25,3 +25,13 @@
     flex-direction: column;
   }
 }
+
+@media(max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-card {
+    padding: 24px;
+  }
+}
