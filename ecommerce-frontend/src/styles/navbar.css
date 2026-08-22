@@ -38,3 +38,23 @@ nav a {
 nav a:hover {
   color: #555;
 }
+
+.nav-bar {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.nav-logout {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.nav-logout:hover {
+  color: #555;
+  text-decoration: underline;
+}

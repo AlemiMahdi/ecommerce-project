@@ -18,3 +18,9 @@ export interface AuthResponse {
     role: "ROLE_USER" | "ROLE_ADMIN";
     token: string;
 }
+
+export interface AuthUser {
+    userId: number;
+    username: string;
+    role: "ROLE_USER" | "ROLE_ADMIN";
+}
