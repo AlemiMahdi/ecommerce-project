@@ -4,6 +4,12 @@ import ProductsPages from "../pages/ProductsPage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 import ProductDetailsPage from "../pages/PRoductDetailsPage";
+import ProtectedRoute from "./ProtectedRoutes";
+import AdminRoute from "./AdminRoute";
+import OrdersPage from "../pages/OrdersPage";
+import AdminProductsPage from "../pages/admin/AdminProductsPage";
+
+
 
 function AppRoutes() {
   return (
@@ -13,6 +19,16 @@ function AppRoutes() {
       <Route path="/products/:id" element={<ProductDetailsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      
+      //krävs login
+      <Route element={<ProtectedRoute />}>
+        <Route path="/orders" element={<OrdersPage />}/>
+      </Route>
+
+      //Kräver ROLE_ADMIN
+      <Route element={<AdminRoute />}>
+        <Route path="/admin/products" element={<AdminProductsPage />}/>
+      </Route>
     </Routes>
   );
 }
