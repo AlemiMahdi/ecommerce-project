@@ -27,12 +27,17 @@ function Navbar(){
 
                     {isAuthenticated ? (
                         <>
+                            <Link to="/orders"> Mina orders</Link>
+                            {user?.role === "ROLE_ADMIN" && (
+                                <Link to="/admin/products"> Admin </Link>
+                            )}
                             <span className="nav-user">
                                 {user?.username}
                             </span>
                             <button type="button" className="nav-logout" onClick={handleLogout}>
                                 Logga ut
                             </button>
+                            
                         </>
                     ) : (
                       <>
