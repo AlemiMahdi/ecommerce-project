@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../api/authApi";
+import { useAuth } from "../context/AuthContext";
 
 
 
@@ -8,6 +9,7 @@ import { login } from "../api/authApi";
 function LoginPage(){
 
     const navigate = useNavigate();
+    const { signIn } = useAuth();
     
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -26,11 +28,7 @@ function LoginPage(){
                 password
             });
 
-            //Tillfällig lösning, i nästa steg flyttas detta till authcontext
-            localStorage.setItem("authToken", response.token);
-            localStorage.setItem("userId", response.userId.toString());
-            localStorage.setItem("username", response.username);
-            localStorage.setItem("role", response.role);
+            signIn(response);
             navigate("/products");
         } catch (error) {
             setError("Fel användarnaman eller lösenord");
